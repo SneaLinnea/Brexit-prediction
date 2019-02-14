@@ -4,8 +4,7 @@ import numpy as np
 import sklearn
 import nltk
 from sklearn.model_selection import cross_validate, train_test_split
-from sklearn.pipeline import make_pipeline
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import accuracy_score
@@ -59,31 +58,41 @@ pipeline = make_pipeline(
         LogisticRegression()
         )
 """
-Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xall, Yall, train_size=0.9)
-
-
-#clf = MultinomialNB().fit(Xtrain, Ytrain)
-#print(cross_validate(pipeline, Xtrain, Ytrain))
-
-
-parameters = {'vect__ngram_range': [(1, 1), (1, 2)], 
-                'tfidf__use_idf': (True, False),'clf-svm__alpha': (1e-2, 1e-3)}
-
-
-
-
-
-
-text_clf = Pipeline([('vect', CountVectorizer()),
-                     ('tfidf', TfidfTransformer()),
-                     ('clf-svm', SGDClassifier(loss='log', 
-                                           alpha=1e-3, n_iter=5, random_state=42)),
- ])
-text_clf = text_clf.fit(Xtrain, Ytrain)
-gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
-gs_clf = gs_clf.fit(Xtrain, Ytrain)
-predicted_svm = gs_clf.predict(Xtest)
-print(np.mean(predicted_svm == Ytest))
+acc = 0
+for i in range (50):
+    Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xall, Yall, train_size=0.9)
+    
+    
+    #clf = MultinomialNB().fit(Xtrain, Ytrain)
+    #print(cross_validate(pipeline, Xtrain, Ytrain))
+    
+    
+    parameters = {'vect__ngram_range': [(1, 1), (1, 2)], 
+                    'tfidf__use_idf': (True, False),'clf-svm__alpha': (1e-2, 1e-3),
+                    'clf-svm__loss': ('hinge', 'log', 'modified_huber', 'squared_hinge', 'perceptron')}
+    
+    
+    
+    
+    
+    
+    text_clf = Pipeline([('vect', CountVectorizer(ngram_range=(1,2))),
+                         ('tfidf', TfidfTransformer(use_idf=True)),
+                         ('clf-svm', SGDClassifier(loss='log', 
+                                               alpha=1e-3, n_iter=5, random_state=42)),
+     ])
+    
+    
+    
+    text_clf = text_clf.fit(Xtrain, Ytrain)
+    gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+    gs_clf = gs_clf.fit(Xtrain, Ytrain)
+    predicted_svm = gs_clf.predict(Xtest)
+    acc += np.mean(predicted_svm == Ytest)
+    
+print(acc/50)
+    
+#print(gs_clf.predict(["Brexit is a shit sandwich"]))
 #print(gs_clf.best_score_)
 #print(gs_clf.best_params_)
 #Yguess = clf.predict(Xtest)
