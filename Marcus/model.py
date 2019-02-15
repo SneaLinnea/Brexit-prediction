@@ -2,7 +2,7 @@
 import pandas as pd
 
 from sklearn.model_selection import cross_validate, train_test_split
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -13,7 +13,7 @@ from sklearn.svm import LinearSVC, SVC, LinearSVR
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix
-
+from sklearn.model_selection import GridSearchCV
 from sklearn.feature_extraction.text import CountVectorizer
 
 from sklearn.dummy import DummyClassifier
@@ -43,7 +43,13 @@ def read_data(filename):
     return data
 df = read_data("a2_train_final.tsv")
 
-nmbrOfTest = 50
+parameters_svm = {'vect__ngram_range': [(1, 1), (1, 2)],
+                'tfidf__use_idf': (True, False),
+                'clf-svm__alpha': (1e-2, 1e-3),
+                  }
+
+
+nmbrOfTest = 1
 accTest = 0
 for i in range(nmbrOfTest):
     Xall = df['comments']
@@ -64,22 +70,22 @@ for i in range(nmbrOfTest):
         #LogisticRegression() # array([0.75988858, 0.73452315, 0.76575572])
         #DecisionTreeClassifier()
         #KNeighborsClassifier()
-        #LinearSVC()
+        LinearSVC()
         #LinearSVR()
         #MLPClassifier(alpha=1)
         #SGDClassifier(loss="hinge", penalty="l2", max_iter=5)
-        SGDClassifier(loss="log", max_iter=5)
+        #SGDClassifier(loss="hinge", penalty="l2" , max_iter=5)
 )
-
-
     pipeline.fit(Xtrain, Ytrain)
     Yguess = pipeline.predict(Xtest)
+    YGuess1 = pipeline.predict(["Sovereign"])
+    print(YGuess1)
     accScore = accuracy_score(Ytest, Yguess)
     print("Run", (i+1), "got score:", accScore)
     accTest += accScore
 
-    print("Current average:", accTest/(i+1))
-    print("-------------------------------------")
+    #print("Current average:", accTest/(i+1))
+    #print("-------------------------------------")
 
 #print(cross_validate(pipeline, Xtrain, Ytrain))
 #print(accuracy_score(Ytest, Yguess))
