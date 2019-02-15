@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import sklearn
 import nltk
+import re
 from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.naive_bayes import MultinomialNB
@@ -19,7 +20,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 def read_data(filename):
     data = pd.read_csv(filename, sep="\t")
     
-    labels = data['label'].astype('str').values
+    #labels = data['label'].astype('str').values
+    labels = data.iloc[:,0].astype('str').values
     removeRows = []
     
     for i in range(len(labels)):
@@ -32,78 +34,47 @@ def read_data(filename):
         else: 
             removeRows.append(i)
 
-    data = data.replace(data['label'].values, labels)
+    data = data.replace(data.iloc[:,0].values, labels)
     
     #drop ambigous answes
     for i in range(len(removeRows)):
         data = data.drop([removeRows[i]])
     
     return data
+
 df = read_data("a2_train_final.tsv")
 
-Xall = df['comments']
-Yall = df['label'].astype(int)  
-
-
-
-#count_vec = CountVectorizer(min_df=1, tokenizer=nltk.word_tokenize)
-#X_train_counts = count_vec.fit_transform(Xall)
-#print(X_train_counts.shape)
-
-#tfidf_transformer = TfidfTransformer()
-#train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
-"""
-pipeline = make_pipeline(
-        CountVectorizer(),
-        LogisticRegression()
-        )
+Xall = df.iloc[:,1]
+Yall = df.iloc[:,0].astype(int)  
+print(df.head(2))
 """
 acc = 0
-for i in range (50):
+nbrOfIterations = 10
+for i in range (nbrOfIterations):
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xall, Yall, train_size=0.9)
-    
-    
-    #clf = MultinomialNB().fit(Xtrain, Ytrain)
-    #print(cross_validate(pipeline, Xtrain, Ytrain))
     
     
     parameters = {'vect__ngram_range': [(1, 1), (1, 2)], 
                     'tfidf__use_idf': (True, False),'clf-svm__alpha': (1e-2, 1e-3),
-                    'clf-svm__loss': ('hinge', 'log', 'modified_huber', 'squared_hinge', 'perceptron')}
-    
-    
-    
-    
-    
+                    'clf-svm__loss': ('hinge', 'log', 'squared_hinge', 'perceptron')}
     
     text_clf = Pipeline([('vect', CountVectorizer(ngram_range=(1,2))),
-                         ('tfidf', TfidfTransformer(use_idf=True)),
-                         ('clf-svm', SGDClassifier(loss='log', 
+                         ('tfidf', TfidfTransformer(use_idf=True, norm='l2')),
+                         ('clf-svm', SGDClassifier(loss='hinge', 
                                                alpha=1e-3, n_iter=5, random_state=42)),
      ])
     
-    
-    
-    text_clf = text_clf.fit(Xtrain, Ytrain)
+
     gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
     gs_clf = gs_clf.fit(Xtrain, Ytrain)
     predicted_svm = gs_clf.predict(Xtest)
     acc += np.mean(predicted_svm == Ytest)
+    print(gs_clf.best_score_)
+    print(gs_clf.best_params_)
     
-print(acc/50)
+print(acc/nbrOfIterations)
     
-#print(gs_clf.predict(["Brexit is a shit sandwich"]))
-#print(gs_clf.best_score_)
-#print(gs_clf.best_params_)
-#Yguess = clf.predict(Xtest)
-#print(sklearn.metrics.accuracy_score(Ytest, Yguess))
 
-#pipeline.fit(Xtrain, Ytrain)
-#Yguess = pipeline.predict(Xtest)
-#accuracy = train_model(linear_model.LogisticRegression(), xtrain_counts, Ytrain, xvalid_count)
-#print "LR, Count Vectors: ", accuracy
-
-#print(accuracy_score(Ytest, Yguess))
-
+"""
 
 
